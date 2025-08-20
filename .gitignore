@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# server/.gitignore
+app.db
+.env
+node_modules
