@@ -1,82 +1,79 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+
+const API = "http://localhost:4000";
 
 const AuthContext = createContext();
-
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
 
+  // Validate token on app start
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser) {
-      setUser(storedUser);
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    (async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`${API}/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const me = await res.json();
+        setUser(me);
+        setIsAuthenticated(true);
+      } catch {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const login = async (userData) => {
-    try {
-      const res = await fetch(`http://localhost:3000/users?email=${userData.email}`);
-      const users = await res.json();
-
-      if (users.length === 0) {
-        alert("User not found");
-        return;
-      }
-
-      const matchedUser = users.find((u) => u.password === userData.password);
-
-      if (!matchedUser) {
-        alert("Incorrect password");
-        return;
-      }
-
-      setUser(matchedUser);
-      setIsAuthenticated(true);
-      localStorage.setItem("user", JSON.stringify(matchedUser));
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Something went wrong while logging in.");
-    }
+  const login = async ({ email, password }) => {
+    const res = await fetch(`${API}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Login failed");
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    setUser(data.user);
+    setIsAuthenticated(true);
   };
 
-  const register = async (userData) => {
-    try {
-      const res = await fetch(`http://localhost:3000/users?email=${userData.email}`);
-      const existingUsers = await res.json();
-
-      if (existingUsers.length > 0) {
-        alert("User already exists");
-        return;
-      }
-
-      const response = await fetch("http://localhost:3000/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const newUser = await response.json();
-      login(newUser);
-    } catch (error) {
-      console.error("Registration error:", error);
-    }
+  const register = async ({ email, password }) => {
+    const res = await fetch(`${API}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Registration failed");
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    setUser(data.user);
+    setIsAuthenticated(true);
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, isAuthenticated, login, register, logout, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );
