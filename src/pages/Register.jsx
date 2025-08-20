@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -13,7 +14,7 @@ const Register = () => {
 
     if (email && password) {
       register({ email , password});
-      navigate("/dashboard");
+      navigate("/");
     }
   };
 
@@ -26,6 +27,9 @@ const Register = () => {
         <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
         <br />
         <button type="submit">Register</button>
+        <p>
+          Already have an account? <Link to="/login">Log in</Link>
+        </p>
       </form>
     </div>
   );

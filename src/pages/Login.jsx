@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,7 +21,7 @@ const Login = () => {
 
     try {
       await login({ email, password });
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       console.error("Login failed:", err);
       setError("Login failed. Please check your credentials.");
@@ -47,6 +48,9 @@ const Login = () => {
         />
         <br />
         <button type="submit">Login</button>
+        <p>
+        No account? <Link to="/register">Register</Link>
+        </p>
       </form>
     </div>
   );
